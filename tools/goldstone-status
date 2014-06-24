@@ -1,0 +1,81 @@
+#!/bin/sh
+#
+# Copyright (C) 2014, Solinea, Inc.
+
+# Licensed under the Solinea Software License Agreement (goldstone),
+# Version 1.0 (the "License"); you may not use this file except in compliance
+# with the License. You may obtain a copy of the License at:
+#
+#     http://www.solinea.com/goldstone/LICENSE.pdf
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+systemctl --version >/dev/null 2>&1 && systemctl=1
+[ "$systemctl" ] || RUNLEVEL=$(LANG=C who -r | sed 's/.*run-level \([0-9]\).*/\1/')
+
+rpm -q logstash > /dev/null && logstash='logstash'
+rpm -q elasticsearch > /dev/null && elasticsearch='elasticsearch'
+rpm -q mysql > /dev/null && mysql='mysql'
+rpm -q redis > /dev/null && redis='redis'
+rpm -q goldstone > /dev/null && goldstone='goldstone'
+
+service_installed() {
+  PAGER= systemctl show $1.service >/dev/null 2>&1 ||
+  chkconfig --list $1 >//dev/null 2>&1
+}
+
+service_enabled() {
+  if [ "$systemctl" ]; then
+    systemctl --quiet is-enabled $1.service 2>/dev/null
+  else
+    chkconfig --levels $RUNLEVEL "$1"
+  fi
+}
+
+lsb_to_string() {
+  case $1 in
+  0) echo "active" ;;
+  1) echo "dead" ;;
+  2) echo "dead" ;;
+  3) echo "inactive" ;;
+  *) echo "unknown" ;;
+  esac
+}
+
+check_svc() {
+
+  printf '%-40s' "$1:"
+
+  bootstatus=$(service_enabled $1 && echo enabled || echo disabled)
+
+  if [ "$systemctl" ]; then
+    status=$(systemctl is-active $1.service 2>/dev/null)
+    # For "simple" systemd services you get
+    # "unknown" if you query a non enabled service
+    if [ "$bootstatus" = 'disabled' ]; then
+      [ $status = 'unknown' ] && status='inactive'
+    fi
+  else
+    status=$(service $1 status >/dev/null 2>/dev/null ; lsb_to_string $?)
+  fi
+
+  if [ "$bootstatus" = 'disabled' ]; then
+    bootstatus='(disabled on boot)'
+  else
+    bootstatus=''
+  fi
+
+  test "$bootstatus" && status_pad=10 || status_pad=0
+
+  printf "%-${status_pad}s%s\n" "$status" "$bootstatus"
+}
+
+
+if test "$logstash"; then
+  printf "== Logstash ==\n"
+  check_svc "logstash"
+fi
