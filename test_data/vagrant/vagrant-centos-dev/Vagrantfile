@@ -4,7 +4,7 @@
 # vi: set ft=ruby :
 
 # This vagrantfile is for **DEVELOPMENT** version of goldstone 
-# on a CentOS 6.5 image
+# on a CentOS 6.5 image along with a allinone RDO Icehouse instance
 
 Vagrant.configure("2") do |config|
 
@@ -18,12 +18,17 @@ Vagrant.configure("2") do |config|
     goldstone.vm.box_url = "https://github.com/2creatives/vagrant-centos/releases/download/v6.5.3/centos65-x86_64-20140116.box"
     goldstone.vm.network :forwarded_port, guest: 80, host: 8080
     goldstone.vm.network :forwarded_port, guest: 8000, host: 8888
-    goldstone.vm.network :forwarded_port, guest: 9200,    host: 9201
+    goldstone.vm.network :forwarded_port, guest: 9200, host: 9201
+    goldstone.vm.network :forwarded_port, guest: 5555, host: 5555
     goldstone.vm.network "private_network", ip: "192.168.1.2", virtualbox__intnet: "private"
     # install prerequesites (EPEL already enabled)
     goldstone.vm.provision :shell, :inline => "yum install -y yum install -y gcc gcc-c++ mysql-server mysql-devel"
     # install goldstone
     goldstone.vm.provision :shell, :inline => "yum install -y http://repo.solinea.com/repo/goldstone_repos-1.1-1.noarch.rpm"
+    install flower to help with Celery debugging
+    goldstone.vm.provision :shell, :inline => "sudo pip install flower"
+    goldstone.vm.provision :shell, :inline => "sudo export DJANGO_SETTINGS_MODULE=goldstone.settings.production"
+    goldstone.vm.provision :shell, :inline => "sudo celery flower -A goldstone --broker=redis://localhost:6379/0 --port=5555 &"
     # Mount RPM folder to install new RPM
     # Change this to your Dropbox folder if it is in a different place
     goldstone.vm.synced_folder "~/Dropbox/Solinea\ Management/Products/RPMs/", "/goldstone"
