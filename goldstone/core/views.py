@@ -12,8 +12,9 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either expressed or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+from goldstone.apps.drfes.views import ElasticListAPIView, SimpleAggView, \
+    DateHistogramAggView
 from rest_framework.generics import RetrieveAPIView
-from goldstone.apps.drfes.views import ElasticListAPIView, SimpleAggView
 from goldstone.utils import TopologyMixin
 
 
@@ -80,6 +81,14 @@ class MetricNamesAggView(SimpleAggView):
         model = MetricData
 
 
+class MetricAggView(DateHistogramAggView):
+    """A view that handles requests for Metric aggregations."""
+
+    class Meta:
+        """Meta"""
+        model = MetricData
+
+
 class NavTreeView(RetrieveAPIView, TopologyMixin):
     """Returns data for the old-style discovery tree rendering.
 
@@ -135,8 +144,7 @@ class NavTreeView(RetrieveAPIView, TopologyMixin):
             as KeystoneDiscoverTree
         from goldstone.apps.glance.utils import DiscoverTree \
             as GlanceDiscoverTree
-        from goldstone.apps.cinder.utils import DiscoverTree \
-            as CinderDiscoverTree
+        from goldstone.cinder.utils import DiscoverTree as CinderDiscoverTree
         from goldstone.apps.nova.utils import DiscoverTree \
             as NovaDiscoverTree
 
@@ -162,8 +170,6 @@ class NavTreeView(RetrieveAPIView, TopologyMixin):
         # going to be important for some modules, so eventually we'll have
         # to be able to find a way to order or otherwise express module
         # dependencies.  It will also be helpful to build from the bottom up.
-
-        # TODO devise mechanism for expressing module dependencies
 
         # bind cinder zones to global at region
         cl = [cinder_topo.build_topology_tree()]
@@ -220,4 +226,3 @@ class NavTreeView(RetrieveAPIView, TopologyMixin):
             return rl[0]
         else:
             return {"rsrcType": "error", "label": "No data found"}
-

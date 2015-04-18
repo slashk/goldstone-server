@@ -1,5 +1,3 @@
-/*! goldstone concat on 2015-04-08@14:59:1 */
-
 /**
  * Copyright 2014 - 2015 Solinea, Inc.
  *
@@ -1532,19 +1530,18 @@ this.novaApiPerfChart = new ApiPerfCollection({
 
 // define collection and link to model
 
-var ApiPerfModel = GoldstoneBaseModel.extend({
-
-    // sorts colleciton by 'key' which maps to timestamp
-    // in returned data payload
-    idAttribute: 'key'
-});
+var ApiPerfModel = GoldstoneBaseModel.extend({});
 
 var ApiPerfCollection = Backbone.Collection.extend({
 
     defaults: {},
 
     parse: function(data) {
-        return data;
+        if (data && data.per_interval) {
+            return data.per_interval;
+        } else {
+            return [];
+        }
     },
 
     model: ApiPerfModel,
@@ -1569,10 +1566,13 @@ var ApiPerfCollection = Backbone.Collection.extend({
         ns.reportParams.end = +new Date();
         ns.reportParams.start = (+new Date()) - (ns.globalLookback * 1000 * 60);
         ns.reportParams.interval = '' + Math.round(1 * ns.globalLookback) + "s";
-        this.url = '/api_perf/stats?start=' + Math.floor(ns.reportParams.start / 1000) + '&end=' + Math.floor(ns.reportParams.end / 1000) + '&interval=' + ns.reportParams.interval + '&component=' + this.defaults.componentParam;
+        this.url = '/api_perf/stats?@timestamp__range={"gte":' + ns.reportParams.start +
+            '}&interval=' + ns.reportParams.interval +
+            '&component=' + this.defaults.componentParam;
 
         // generates url string similar to:
-        // /api_perf/stats?start=1424710116&end=1424713716&interval=60s&component=nova
+        // /api_perf/stats?timestamp__range={%22gte%22:1428556490}&interval=60s&component=glance
+
     }
 });
 ;
@@ -1611,7 +1611,11 @@ var CpuResourceCollection = Backbone.Collection.extend({
     defaults: {},
 
     parse: function(data) {
-        return data;
+        if (data && data.results) {
+            return data.results;
+        } else {
+            return [];
+        }
     },
 
     model: GoldstoneBaseModel,
@@ -1633,12 +1637,14 @@ var CpuResourceCollection = Backbone.Collection.extend({
         // the number of minutes specified by the selector
 
         var ns = this.defaults;
-        ns.reportParams.end = +new Date();
+
         ns.reportParams.start = (+new Date()) - (ns.globalLookback * 1000 * 60);
-        ns.reportParams.interval = '' + Math.round(1 * ns.globalLookback) + "s";
-        this.url = ns.urlPrefix + '?start=' + Math.floor(ns.reportParams.start / 1000) + '&end=' + Math.floor(ns.reportParams.end / 1000) + '&interval=' + ns.reportParams.interval;
+        this.url = '/core/metrics?name__prefix=nova.hypervisor.vcpus&@timestamp__range={"gte":' +
+            moment(ns.reportParams.start).valueOf() + '}';
     }
 
+    // creates a url similar to:
+    // /core/metrics?name__prefix=nova.hypervisor.vcpus&@timestamp__range={"gte":1426887188000}
 });
 ;
 /**
@@ -1677,7 +1683,11 @@ var DiskResourceCollection = Backbone.Collection.extend({
     defaults: {},
 
     parse: function(data) {
-        return data;
+        if (data && data.results) {
+            return data.results;
+        } else {
+            return [];
+        }
     },
 
     model: GoldstoneBaseModel,
@@ -1700,12 +1710,13 @@ var DiskResourceCollection = Backbone.Collection.extend({
 
         var ns = this.defaults;
 
-        ns.reportParams.end = +new Date();
         ns.reportParams.start = (+new Date()) - (ns.globalLookback * 1000 * 60);
-        ns.reportParams.interval = '' + Math.round(1 * ns.globalLookback) + "s";
-        this.url = ns.urlPrefix + '?start=' + Math.floor(ns.reportParams.start / 1000) + '&end=' + Math.floor(ns.reportParams.end / 1000) + '&interval=' + ns.reportParams.interval;
+        this.url = '/core/metrics?name__prefix=nova.hypervisor.local_gb&@timestamp__range={"gte":' +
+            moment(ns.reportParams.start).valueOf() + '}';
     }
 
+    // creates a url similar to:
+    // /core/metrics?name__prefix=nova.hypervisor.local_gb&@timestamp__range={"gte":1429058361304}
 });
 ;
 /**
@@ -2167,7 +2178,11 @@ var MemResourceCollection = Backbone.Collection.extend({
     defaults: {},
 
     parse: function(data) {
-        return data;
+        if (data && data.results) {
+            return data.results;
+        } else {
+            return [];
+        }
     },
 
     model: GoldstoneBaseModel,
@@ -2190,11 +2205,13 @@ var MemResourceCollection = Backbone.Collection.extend({
 
         var ns = this.defaults;
 
-        ns.reportParams.end = +new Date();
         ns.reportParams.start = (+new Date()) - (ns.globalLookback * 1000 * 60);
-        ns.reportParams.interval = '' + Math.round(1 * ns.globalLookback) + "s";
-        this.url = ns.urlPrefix + '?start=' + Math.floor(ns.reportParams.start / 1000) + '&end=' + Math.floor(ns.reportParams.end / 1000) + '&interval=' + ns.reportParams.interval;
+        this.url = '/core/metrics?name__prefix=nova.hypervisor.mem&@timestamp__range={"gte":' +
+            moment(ns.reportParams.start).valueOf() + '}';
     }
+
+    // creates a url similar to:
+    // /core/metrics?name__prefix=nova.hypervisor.mem&@timestamp__range={"gte":1426887188000}
 
 });
 ;
@@ -2467,7 +2484,11 @@ var StackedBarChartCollection = Backbone.Collection.extend({
     defaults: {},
 
     parse: function(data) {
-        return data;
+        if (data && data.per_interval) {
+            return data.per_interval;
+        } else {
+            return [];
+        }
     },
 
     model: GoldstoneBaseModel,
@@ -2493,8 +2514,12 @@ var StackedBarChartCollection = Backbone.Collection.extend({
         ns.reportParams.end = +new Date();
         ns.reportParams.start = (+new Date()) - (ns.globalLookback * 1000 * 60);
         ns.reportParams.interval = '' + Math.round(1 * ns.globalLookback) + "s";
-        this.url = ns.urlPrefix + '?start=' + Math.floor(ns.reportParams.start / 1000) + '&end=' + Math.floor(ns.reportParams.end / 1000) + '&interval=' + ns.reportParams.interval;
+        this.url = ns.urlPrefix + '?@timestamp__range={"gte":' +
+            ns.reportParams.start + '}&interval=' + ns.reportParams.interval;
     }
+
+    // creates a url similar to:
+    // /nova/hypervisor/spawns?@timestamp__range={"gte":1429027100000}&interval=1h
 
 });
 ;
@@ -3085,17 +3110,28 @@ var ApiPerfView = GoldstoneBaseView.extend({
         $(this.el).find('svg').find('.chart').html('');
         $(this.el + '.d3-tip').detach();
 
+        ns.y.domain([0, d3.max(json, function(d) {
+            var key = _.keys(d).toString();
+            return d[key].stats.max;
+        })]);
+
         json.forEach(function(d) {
-            d.time = moment(Number(d.key));
+            // careful as using _.keys after this
+            // will return [timestamp, 'time']
+            d.time = moment(+_.keys(d)[0]);
+
+            // which is why .filter is required here:
+            var key = _.keys(d).filter(function(item){
+                return item !== "time";
+            }).toString();
+            d.min = d[key].stats.min || 0;
+            d.max = d[key].stats.max || 0;
+            d.avg = d[key].stats.avg || 0;
         });
 
         ns.x.domain(d3.extent(json, function(d) {
             return d.time;
         }));
-
-        ns.y.domain([0, d3.max(json, function(d) {
-            return d.max;
-        })]);
 
         var area = d3.svg.area()
             .interpolate("basis")
@@ -5572,7 +5608,7 @@ var LogAnalysisView = UtilizationCpuView.extend({
             debug: true
         },
 
-        // filter: null,
+        refreshCount: 2,
 
         // will prevent updating when zoom is active
         isZoomed: false
@@ -5583,9 +5619,15 @@ var LogAnalysisView = UtilizationCpuView.extend({
 
         LogAnalysisView.__super__.processOptions.apply(this, arguments);
 
+        var self = this;
         var ns = this.defaults;
         ns.yAxisLabel = 'Log Events';
         ns.urlRoot = this.options.urlRoot;
+
+        // specificHost will only be passed in if instantiated on a node
+        // report page. If null, will be ignored in this.constructUrl
+        // and this.urlGen
+        ns.specificHost = this.options.specificHost || null;
     },
 
     processMargins: function() {
@@ -5601,7 +5643,11 @@ var LogAnalysisView = UtilizationCpuView.extend({
         var seconds = (ns.end - ns.start) / 1000;
         var interval = Math.max(1, Math.floor((seconds / (ns.width / 10))));
 
-        this.collection.url = ns.urlRoot + 'per_host=False&@timestamp__range={' +
+        this.collection.url = ns.urlRoot;
+        if (ns.specificHost) {
+            this.collection.url += 'host=' + ns.specificHost + '&';
+        }
+        this.collection.url += 'per_host=False&@timestamp__range={' +
             '"gte":' + ns.start + ',"lte":' + ns.end + '}&interval=' + interval + 's';
     },
 
@@ -5928,9 +5974,19 @@ var LogAnalysisView = UtilizationCpuView.extend({
             self.update();
         });
 
-        this.refreshSearchTable();
+        // eliminates the immediate re-rendering of search table
+        // upon initial chart instantiation
+        this.refreshSearchTableAfterOnce();
         this.redraw();
 
+    },
+
+    refreshSearchTableAfterOnce: function() {
+        var ns = this.defaults;
+        var self = this;
+        if (--ns.refreshCount < 1) {
+            self.refreshSearchTable();
+        }
     },
 
     searchDataErrorMessage: function(message, errorMessage, location) {
@@ -5962,7 +6018,13 @@ var LogAnalysisView = UtilizationCpuView.extend({
         var ns = this.defaults;
         var self = this;
 
-        var uri = '/logging/search?@timestamp__range={"gte":' +
+        var uri = '/logging/search?';
+
+        if (ns.specificHost) {
+            uri += 'host=' + ns.specificHost + '&';
+        }
+
+        uri += '@timestamp__range={"gte":' +
             ns.start +
             ',"lte":' +
             ns.end +
@@ -5984,6 +6046,7 @@ var LogAnalysisView = UtilizationCpuView.extend({
         /*
         makes a url such as:
         /logging/search?@timestamp__range={%22gte%22:1426981050017,%22lte%22:1426984650017}&loglevel__terms=[%22EMERGENCY%22,%22ALERT%22,%22CRITICAL%22,%22ERROR%22,%22WARNING%22,%22NOTICE%22,%22INFO%22,%22DEBUG%22]
+        with "&host=node-01" added in if this is a node report page
         */
     },
 
@@ -6036,7 +6099,7 @@ var LogAnalysisView = UtilizationCpuView.extend({
         if ($.fn.dataTable.isDataTable(location)) {
             oTable = $(location).DataTable();
             // oTable.ajax.url(uri);
-            oTable.ajax.reload();
+            // oTable.ajax.reload();
         } else {
             var oTableParams = {
                 "info": true,
@@ -6259,9 +6322,9 @@ within this LogSearchView. The global lookback/refresh listeners are listenTo()'
 from this view, and with the triggerChange function, kick off responding
 processes in the LogAnalysisView that is instantiated from within this view.
 
-instantiated in search.html as
+instantiated in goldstoneRouter as
     new LogSearchView({
-        el: ".log-search-container"
+        el: ".launcher-container"
     });
 */
 
@@ -6317,9 +6380,13 @@ var LogSearchView = GoldstoneBasePageView.extend({
     },
 
     renderCharts: function() {
+        var self = this;
         this.computeLookback();
         var ns = this.defaults;
 
+        // specificHost applies to this chart when instantiated
+        // on a node report page to scope it to that node
+        this.defaults.specificHost = this.options.specificHost || '';
         this.logAnalysisCollection = new LogAnalysisCollection({});
 
         this.logAnalysisView = new LogAnalysisView({
@@ -6330,7 +6397,7 @@ var LogSearchView = GoldstoneBasePageView.extend({
             featureSet: 'logEvents',
             chartTitle: 'Log Analysis',
             urlRoot: "/logging/summarize?",
-
+            specificHost: ns.specificHost
         });
     },
 
@@ -7579,8 +7646,7 @@ var NodeReportView = GoldstoneBasePageView.extend({
 
     initialize: function(options) {
 
-        // options.node_uuid passed in during View instantiation on node_report.html
-        // var node_uuid = "{{ node_uuid | escapejs }}";
+        // options.node_uuid passed in during View instantiation
         this.node_uuid = options.node_uuid;
 
         // invoke the 'superclass'
@@ -7591,6 +7657,8 @@ var NodeReportView = GoldstoneBasePageView.extend({
     },
 
     triggerChange: function() {
+
+        var ns = this.defaults;
 
         // triggerChange event triggered by changing the global range selector
         // or by clicking on the (services|reports|events) tab buttons.
@@ -7610,6 +7678,17 @@ var NodeReportView = GoldstoneBasePageView.extend({
         if (this.visiblePanel.Events) {
             this.eventsReport.trigger('lookbackSelectorChanged');
         }
+
+        if (this.visiblePanel.Logs) {
+            this.computeLookback();
+            this.logAnalysisView.trigger('lookbackSelectorChanged', [ns.start, ns.end]);
+        }
+    },
+
+    computeLookback: function() {
+        var ns = this.defaults;
+        ns.end = +new Date();
+        ns.start = ns.end - (ns.globalLookback * 60 * 1000);
     },
 
     setGlobalLookbackRefreshTriggers: function() {
@@ -7639,7 +7718,8 @@ var NodeReportView = GoldstoneBasePageView.extend({
         Services: true,
         Reports: false,
         Events: false,
-        Details: false
+        Details: false,
+        Logs: false
     },
 
     // function to toggle key in visiblePanel
@@ -7658,12 +7738,13 @@ var NodeReportView = GoldstoneBasePageView.extend({
     initializeChartButtons: function() {
         var self = this;
 
-        // initially hide the reports and events tab, displaying only 'Services'
+        // initially hide the other tabs, displaying only 'Services'
         $("#reportsReport").hide();
         $("#eventsReport").hide();
         $("#detailsReport").hide();
+        $("#logsReport").hide();
 
-        // Initialize click listener on services|reports|events tabs
+        // Initialize click listener on tab buttons
         $("button#headerBar").click(function() {
 
             // sets key corresponding to active tab to 'true'
@@ -7798,7 +7879,8 @@ var NodeReportView = GoldstoneBasePageView.extend({
         //---------------------------
         // instantiate Libvirt core/vm chart
         this.hypervisorCoreChart = new HypervisorCollection({
-            url: "/api_perf/stats?start=111&end=112&interval=60s&component=nova",
+            url: "/core/report_names?node=rsrc-02&timestamp__range={%27gte%27:1429203012258}",
+            // url: "/api_perf/stats?start=111&end=112&interval=60s&component=nova",
             globalLookback: ns.globalLookback
         });
 
@@ -7813,7 +7895,8 @@ var NodeReportView = GoldstoneBasePageView.extend({
         //---------------------------
         // instantiate Libvirt mem/vm  chart
         this.hypervisorMemoryChart = new HypervisorCollection({
-            url: "/api_perf/stats?start=111&end=112&interval=60s&component=nova",
+            url: "/core/report_names?node=rsrc-02&timestamp__range={%27gte%27:1429203012258}",
+            // url: "/api_perf/stats?start=111&end=112&interval=60s&component=nova",
             globalLookback: ns.globalLookback
         });
         this.hypervisorMemoryView = new HypervisorView({
@@ -7826,7 +7909,8 @@ var NodeReportView = GoldstoneBasePageView.extend({
         //---------------------------
         // instantiate Libvirt top 10 CPU consumer VMs chart
         this.hypervisorVmCpuChart = new HypervisorVmCpuCollection({
-            url: "/api_perf/stats?start=111&end=112&interval=60s&component=nova",
+            url: "/core/report_names?node=rsrc-02&timestamp__range={%27gte%27:1429203012258}",
+            // url: "/api_perf/stats?start=111&end=112&interval=60s&component=nova",
             globalLookback: ns.globalLookback
         });
 
@@ -7867,6 +7951,22 @@ var NodeReportView = GoldstoneBasePageView.extend({
         this.detailsReport = new DetailsReportView({
             el: '#node-report-panel #detailsReport'
         });
+
+        //---------------------------
+        // instantiate Logs tab
+
+        this.logsReportCollection = new LogAnalysisCollection({});
+
+        this.logAnalysisView = new LogSearchView({
+            collection: this.logAnalysisCollection,
+            width: $('#logsReport').width(),
+            height: 300,
+            el: '#logsReport',
+            featureSet: 'logEvents',
+            chartTitle: 'Log Analysis',
+            specificHost: this.node_uuid,
+            urlRoot: "/logging/summarize?",
+        });
     },
 
     template: _.template('' +
@@ -7883,6 +7983,7 @@ var NodeReportView = GoldstoneBasePageView.extend({
         '<button type="button" id="headerBar" class="reportsButton btn btn-default">Reports</button>' +
         '<button type="button" id="headerBar" class="eventsButton btn btn-default">Events</button>' +
         '<button type="button" id="headerBar" class="detailsButton btn btn-default">Details</button>' +
+        '<button type="button" id="headerBar" class="logsButton btn btn-default">Logs</button>' +
         '</div><br><br>' +
 
         '<div id="main-container" class="col-md-12">' +
@@ -7939,6 +8040,7 @@ var NodeReportView = GoldstoneBasePageView.extend({
         '<div class="col-md-12" id="reportsReport">&nbsp;</div>' +
         '<div class="col-md-12" id="eventsReport">&nbsp;</div>' +
         '<div class="col-md-12" id="detailsReport">&nbsp;</div>' +
+        '<div class="col-md-12" id="logsReport">&nbsp;</div>' +
         '</div>' +
         '</div>' +
         '</div>'
@@ -8018,9 +8120,7 @@ var NovaReportView = GoldstoneBasePageView.extend({
         CPU Resources Chart
         */
 
-        this.cpuResourcesChart = new CpuResourceCollection({
-            urlPrefix: '/nova/hypervisor/cpu'
-        });
+        this.cpuResourcesChart = new CpuResourceCollection({});
 
         this.cpuResourcesChartView = new StackedBarChartView({
             chartTitle: "CPU Resources",
@@ -8037,9 +8137,7 @@ var NovaReportView = GoldstoneBasePageView.extend({
         Mem Resources Chart
         */
 
-        this.memResourcesChart = new MemResourceCollection({
-            urlPrefix: '/nova/hypervisor/mem'
-        });
+        this.memResourcesChart = new MemResourceCollection({});
 
         this.memResourcesChartView = new StackedBarChartView({
             chartTitle: "Memory Resources",
@@ -8056,9 +8154,7 @@ var NovaReportView = GoldstoneBasePageView.extend({
         Disk Resources Chart
         */
 
-        this.diskResourcesChart = new DiskResourceCollection({
-            urlPrefix: '/nova/hypervisor/disk'
-        });
+        this.diskResourcesChart = new DiskResourceCollection({});
 
         this.diskResourcesChartView = new StackedBarChartView({
             chartTitle: "Disk Resources",
@@ -8975,61 +9071,154 @@ var StackedBarChartView = GoldstoneBaseView.extend({
         */
 
         var ns = this.defaults;
-
+        var uniqTimestamps;
         var result = [];
 
         if (ns.featureSet === 'cpu') {
 
             // CPU Resources chart data prep
-            // {timestamp: [used, phys, virt]}
-            _.each(data[0], function(item, i) {
+            /*
+            {
+                "name": "nova.hypervisor.vcpus",
+                "region": "RegionOne",
+                "value": 16,
+                "metric_type": "gauge",
+                "@timestamp": "2015-04-07T17:21:48.285186+00:00",
+                "unit": "count"
+            },
+            {
+                "name": "nova.hypervisor.vcpus_used",
+                "region": "RegionOne",
+                "value": 7,
+                "metric_type": "gauge",
+                "@timestamp": "2015-04-07T17:21:48.285186+00:00",
+                "unit": "count"
+            },
+            */
+
+            uniqTimestamps = _.uniq(_.map(data, function(item) {
+                return item['@timestamp'];
+            }));
+            _.each(uniqTimestamps, function(item, i) {
                 result.push({
-                    "eventTime": "" + i,
-                    "Used": item[0],
-                    "Physical": item[1],
-                    "Virtual": item[2]
+                    eventTime: moment(item).valueOf(),
+                    Used: _.where(data, {
+                        '@timestamp': item,
+                        'name': 'nova.hypervisor.vcpus_used'
+                    })[0].value,
+                    Physical: _.where(data, {
+                        '@timestamp': item,
+                        'name': 'nova.hypervisor.vcpus'
+                    })[0].value
                 });
+
             });
 
         } else if (ns.featureSet === 'disk') {
 
-            // Disk Resources chart data prep
-            // {timestamp: [used, total]}
-            _.each(data[0], function(item, i) {
+            /*
+            {
+                "name": "nova.hypervisor.local_gb_used",
+                "region": "RegionOne",
+                "value": 83,
+                "metric_type": "gauge",
+                "@timestamp": "2015-04-07T17:21:48.285186+00:00",
+                "unit": "GB"
+            },
+            {
+                "name": "nova.hypervisor.local_gb",
+                "region": "RegionOne",
+                "value": 98,
+                "metric_type": "gauge",
+                "@timestamp": "2015-04-07T17:21:48.285186+00:00",
+                "unit": "GB"
+            },
+        */
+            uniqTimestamps = _.uniq(_.map(data, function(item) {
+                return item['@timestamp'];
+            }));
+            _.each(uniqTimestamps, function(item, i) {
                 result.push({
-                    "eventTime": "" + i,
-                    "Used": item[0],
-                    "Total": item[1]
+                    eventTime: moment(item).valueOf(),
+                    Used: _.where(data, {
+                        '@timestamp': item,
+                        'name': 'nova.hypervisor.local_gb_used'
+                    })[0].value,
+                    Total: _.where(data, {
+                        '@timestamp': item,
+                        'name': 'nova.hypervisor.local_gb'
+                    })[0].value
                 });
+
             });
 
         } else if (ns.featureSet === 'mem') {
 
-            // Memory Resources chart data prep
-            // {timestamp: [used, phys, virt]}
-            _.each(data[0], function(item, i) {
+            /*
+            {
+                "name": "nova.hypervisor.memory_mb_used",
+                "region": "RegionOne",
+                "value": 10752,
+                "metric_type": "gauge",
+                "@timestamp": "2015-04-07T17:21:48.285186+00:00",
+                "unit": "MB"
+            },
+            {
+                "name": "nova.hypervisor.memory_mb",
+                "region": "RegionOne",
+                "value": 31872,
+                "metric_type": "gauge",
+                "@timestamp": "2015-04-07T17:21:48.285186+00:00",
+                "unit": "MB"
+            },
+            */
+
+            uniqTimestamps = _.uniq(_.map(data, function(item) {
+                return item['@timestamp'];
+            }));
+            _.each(uniqTimestamps, function(item, i) {
                 result.push({
-                    "eventTime": "" + i,
-                    "Used": item[0],
-                    "Physical": item[1],
-                    "Virtual": item[2]
+                    eventTime: moment(item).valueOf(),
+                    Used: _.where(data, {
+                        '@timestamp': item,
+                        'name': 'nova.hypervisor.memory_mb_used'
+                    })[0].value,
+                    Physical: _.where(data, {
+                        '@timestamp': item,
+                        'name': 'nova.hypervisor.memory_mb'
+                    })[0].value
                 });
+
             });
+
 
         } else {
 
             // Spawns Resources chart data prep
-            // {timestamp: [success, fail]}
-            _.each(data[0], function(item, i) {
+            /*
+            {"1429032900000":
+                {"count":1,
+                "success":
+                    [
+                        {"true":1}
+                    ]
+                }
+            }
+            */
+
+            _.each(data, function(item) {
+                var logTime = _.keys(item)[0];
+                var success = _.pluck(item[logTime].success, 'true');
+                success = success[0] || 0;
+                var failure = _.pluck(item[logTime].success, 'false');
+                failure = failure[0] || 0;
                 result.push({
-                    "eventTime": "" + i,
-                    "Success": item[0],
-                    "Failure": item[1]
+                    "eventTime": logTime,
+                    "Success": success,
+                    "Failure": failure
                 });
             });
-
         }
-
         return result;
     },
 
@@ -9082,11 +9271,6 @@ var StackedBarChartView = GoldstoneBaseView.extend({
 
         this.hideSpinner();
 
-        // if empty set, append info popup and stop
-        if (this.checkReturnedDataSet(data) === false) {
-            return;
-        }
-
         // clear elements from previous render
         $(this.el).find('svg').find('rect').remove();
         $(this.el).find('svg').find('line').remove();
@@ -9095,6 +9279,11 @@ var StackedBarChartView = GoldstoneBaseView.extend({
         $(this.el).find('svg').find('path').remove();
         $(this.el).find('svg').find('circle').remove();
         $(this.el + '.d3-tip').detach();
+
+        // if empty set, append info popup and stop
+        if (this.checkReturnedDataSet(data) === false) {
+            return;
+        }
 
         // maps keys such as "Used / Physical / Virtual" to a color
         // but skips mapping "eventTime" to a color
@@ -9351,14 +9540,16 @@ var StackedBarChartView = GoldstoneBaseView.extend({
                 .attr("stroke-dasharray", "5, 2");
         };
 
-        // lineFunction must be a named localvariable as it will be called by
+        // lineFunction must be a named local
+        // variable as it will be called by
         // the pathGenerator function that immediately follows
         var lineFunction;
         if (ns.featureSet === 'cpu') {
 
             // generate solid line for Virtual data points
-            lineFunction = lineFunctionGenerator('Virtual');
-            solidPathGenerator('Virtual');
+            // uncomment if supplying virtual stat again
+            // lineFunction = lineFunctionGenerator('Virtual');
+            // solidPathGenerator('Virtual');
 
             // generate dashed line for Physical data points
             lineFunction = lineFunctionGenerator('Physical');
@@ -9372,8 +9563,9 @@ var StackedBarChartView = GoldstoneBaseView.extend({
         } else if (ns.featureSet === 'mem') {
 
             // generate solid line for Virtual data points
-            lineFunction = lineFunctionGenerator('Virtual');
-            solidPathGenerator('Virtual');
+            // uncomment if supplying virtual stat again
+            // lineFunction = lineFunctionGenerator('Virtual');
+            // solidPathGenerator('Virtual');
 
             // generate dashed line for Physical data points
             lineFunction = lineFunctionGenerator('Physical');
@@ -9384,12 +9576,14 @@ var StackedBarChartView = GoldstoneBaseView.extend({
         // appends chart legends
         var legendSpecs = {
             mem: [
-                ['Virtual', 2],
+                // uncomment if supplying virtual stat again
+                // ['Virtual', 2],
                 ['Physical', 1],
                 ['Used', 0]
             ],
             cpu: [
-                ['Virtual', 2],
+                // uncomment if supplying virtual stat again
+                // ['Virtual', 2],
                 ['Physical', 1],
                 ['Used', 0]
             ],

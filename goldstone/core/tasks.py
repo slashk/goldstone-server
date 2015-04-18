@@ -41,18 +41,6 @@ def delete_indices(prefix,
 
 
 @celery_app.task()
-def create_daily_index(basename='goldstone'):
-    """Create a new Elasticsearch index and set up the goldstone alias.
-
-    The task body is in goldstone/models.py to fix a circular import.
-
-    """
-    from goldstone.models import create_daily_index as cdi
-
-    cdi(basename)
-
-
-@celery_app.task()
 def reconcile_hosts():
     """Update the Resource graph nodes and edges from the current OpenStack
     cloud state.
@@ -65,6 +53,9 @@ def reconcile_hosts():
     """
     from goldstone.apps.glance.utils import reconcile_glance_hosts
     from goldstone.apps.nova.utils import reconcile_nova_hosts
+    from goldstone.cinder.utils import reconcile_cinder_hosts
 
-    for services in [reconcile_glance_hosts, reconcile_nova_hosts]:
+    for services in [reconcile_glance_hosts,
+                     reconcile_nova_hosts,
+                     reconcile_cinder_hosts]:
         services()
